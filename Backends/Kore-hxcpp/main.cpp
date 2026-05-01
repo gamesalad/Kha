@@ -111,6 +111,14 @@ namespace {
 		SystemImpl_obj::gamepadButton(gamepad, button, value);
 	}
 
+	void gamepadConnect(int gamepad, void *data) {
+		SystemImpl_obj::gamepadConnected(gamepad);
+	}
+
+	void gamepadDisconnect(int gamepad, void *data) {
+		SystemImpl_obj::gamepadDisconnected(gamepad);
+	}
+
 	void touchStart(int index, int x, int y) {
 		SystemImpl_obj::touchStart(index, x, y);
 	}
@@ -315,6 +323,8 @@ void init_kinc(const char *name, int width, int height, kinc_window_options_t *w
 	kinc_eraser_set_move_callback(penEraserMove);
 	kinc_gamepad_set_axis_callback(gamepadAxis, nullptr);
 	kinc_gamepad_set_button_callback(gamepadButton, nullptr);
+	kinc_gamepad_set_connect_callback(gamepadConnect, nullptr);
+	kinc_gamepad_set_disconnect_callback(gamepadDisconnect, nullptr);
 	kinc_surface_set_touch_start_callback(touchStart);
 	kinc_surface_set_touch_end_callback(touchEnd);
 	kinc_surface_set_move_callback(touchMove);

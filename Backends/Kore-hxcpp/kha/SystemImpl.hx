@@ -383,6 +383,22 @@ class SystemImpl {
 		gamepads[gamepad].sendButtonEvent(button, value);
 	}
 
+	// Bridge for kinc_internal_gamepad_trigger_{connect,disconnect}.
+	// Idempotent w.r.t. the per-frame poll above: if the OS already
+	// pushed a connect via this path, the poll's `!gamepads[i].connected`
+	// branch won't fire again on the next frame.
+	public static function gamepadConnected(gamepad: Int): Void {
+		if (gamepad < 0 || gamepad >= gamepads.length) return;
+		if (gamepads[gamepad].connected) return;
+		Gamepad.sendConnectEvent(gamepad);
+	}
+
+	public static function gamepadDisconnected(gamepad: Int): Void {
+		if (gamepad < 0 || gamepad >= gamepads.length) return;
+		if (!gamepads[gamepad].connected) return;
+		Gamepad.sendDisconnectEvent(gamepad);
+	}
+
 	public static function touchStart(index: Int, x: Int, y: Int): Void {
 		surface.sendTouchStartEvent(index, x, y);
 	}
