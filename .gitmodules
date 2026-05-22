@@ -9,7 +9,7 @@
 [submodule "Kore"]
 	path = Kore
 	url = https://github.com/gamesalad/Kore.git
-	branch = ios-input-fixes
+	branch = gamesalad
 [submodule "Tools/linux_x64"]
 	path = Tools/linux_x64
 	url = https://github.com/Kode/KhaTools_linux_x64.git
