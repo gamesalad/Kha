@@ -320,6 +320,10 @@ class SystemImpl {
 		keyboard.sendPressEvent(String.fromCharCode(char));
 	}
 
+	public static function keyText(text: String): Void {
+		keyboard.sendTextEvent(text);
+	}
+
 	public static var mouseX: Int;
 	public static var mouseY: Int;
 
