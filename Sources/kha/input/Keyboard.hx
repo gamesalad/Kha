@@ -40,26 +40,33 @@ class Keyboard extends Controller {
 	 * @param downListener (optional) function with `key:KeyCode` argument, fired when a key is pressed down.
 	 * @param upListener (optional) function with `key:KeyCode` argument, fired when a key is released.
 	 * @param pressListener (optional) function with `char:String` argument, fired when a key that produces a character value is pressed down.
+	 * @param textListener (optional) function with `text:String` argument, fired when the system delivers committed text — typically an IME composition result (CJK / Hangul / kana) or a multi-codepoint paste / autocorrect replacement. The string may span multiple codepoints, including characters outside the BMP. Use this for text-input that needs to support IME composition.
 	 */
-	public function notify(?downListener: (key: KeyCode) -> Void, ?upListener: (key: KeyCode) -> Void, ?pressListener: (char: String) -> Void = null): Void {
+	public function notify(?downListener: (key: KeyCode) -> Void, ?upListener: (key: KeyCode) -> Void, ?pressListener: (char: String) -> Void = null,
+			?textListener: (text: String) -> Void = null): Void {
 		if (downListener != null)
 			downListeners.push(downListener);
 		if (upListener != null)
 			upListeners.push(upListener);
 		if (pressListener != null)
 			pressListeners.push(pressListener);
+		if (textListener != null)
+			textListeners.push(textListener);
 	}
 
 	/**
 	 * Removes event handlers from the passed functions that were passed to `notify` function.
 	 */
-	public function remove(?downListener: (key: KeyCode) -> Void, ?upListener: (key: KeyCode) -> Void, ?pressListener: (char: String) -> Void): Void {
+	public function remove(?downListener: (key: KeyCode) -> Void, ?upListener: (key: KeyCode) -> Void, ?pressListener: (char: String) -> Void,
+			?textListener: (text: String) -> Void): Void {
 		if (downListener != null)
 			downListeners.remove(downListener);
 		if (upListener != null)
 			upListeners.remove(upListener);
 		if (pressListener != null)
 			pressListeners.remove(pressListener);
+		if (textListener != null)
+			textListeners.remove(textListener);
 	}
 
 	/**
@@ -77,12 +84,14 @@ class Keyboard extends Controller {
 	var downListeners: Array<(key: KeyCode) -> Void>;
 	var upListeners: Array<(key: KeyCode) -> Void>;
 	var pressListeners: Array<(char: String) -> Void>;
+	var textListeners: Array<(text: String) -> Void>;
 
 	function new() {
 		super();
 		downListeners = [];
 		upListeners = [];
 		pressListeners = [];
+		textListeners = [];
 		instance = this;
 	}
 
@@ -110,6 +119,13 @@ class Keyboard extends Controller {
 	function sendPressEvent(char: String): Void {
 		for (listener in pressListeners) {
 			listener(char);
+		}
+	}
+
+	@input
+	function sendTextEvent(text: String): Void {
+		for (listener in textListeners) {
+			listener(text);
 		}
 	}
 }

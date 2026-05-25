@@ -51,6 +51,10 @@ namespace {
 		SystemImpl_obj::keyPress((int)character);
 	}
 
+	void keyText(const char *utf8, void *data) {
+		SystemImpl_obj::keyText(String(utf8));
+	}
+
 	void mouseDown(int windowId, int button, int x, int y, void *data) {
 		SystemImpl_obj::mouseDown(windowId, button, x, y);
 	}
@@ -310,6 +314,7 @@ void init_kinc(const char *name, int width, int height, kinc_window_options_t *w
 	kinc_keyboard_set_key_down_callback(keyDown, nullptr);
 	kinc_keyboard_set_key_up_callback(keyUp, nullptr);
 	kinc_keyboard_set_key_press_callback(keyPress, nullptr);
+	kinc_keyboard_set_key_text_callback(keyText, nullptr);
 	kinc_mouse_set_press_callback(mouseDown, nullptr);
 	kinc_mouse_set_release_callback(mouseUp, nullptr);
 	kinc_mouse_set_move_callback(mouseMove, nullptr);
