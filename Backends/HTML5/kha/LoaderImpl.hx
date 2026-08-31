@@ -18,11 +18,41 @@ class LoaderImpl {
 	@:allow(kha.SystemImpl)
 	static var dropFiles = new Map<String, js.html.File>();
 
+	/**
+	 * Optional base URL for bundled-asset fetches, read from
+	 * `window.GSE_ENGINE_BASE`. By default khamake-embedded file names are
+	 * fetched relative to the PAGE, which breaks hosts that serve the
+	 * engine bundle from a subdirectory (the page at /, the bundle at
+	 * /gse2/). When the global is set, every relative `desc.files` entry
+	 * is prefixed with it once, at each public load entry point. Already-
+	 * absolute URLs (and drop:// files) pass through untouched, so the
+	 * rewrite is idempotent and never touches remote or dropped assets.
+	 */
+	static function applyBaseUrl(desc: Dynamic): Void {
+		var base: String = null;
+		try {
+			var b: Dynamic = Syntax.code("window.GSE_ENGINE_BASE");
+			if (b != null) base = Std.string(b);
+		}
+		catch (_: Dynamic) {}
+		if (base == null || base.length == 0) return;
+		var files: Array<Dynamic> = desc.files;
+		if (files == null) return;
+		for (i in 0...files.length) {
+			var f = Std.string(files[i]);
+			if (f.startsWith("http://") || f.startsWith("https://") || f.startsWith("blob:") || f.startsWith("data:")
+				|| f.startsWith("drop://") || f.startsWith(base))
+				continue;
+			files[i] = base + f;
+		}
+	}
+
 	public static function getImageFormats(): Array<String> {
 		return ["png", "jpg", "hdr"];
 	}
 
 	public static function loadImageFromDescription(desc: Dynamic, done: kha.Image->Void, failed: AssetError->Void) {
+		applyBaseUrl(desc);
 		var readable = Reflect.hasField(desc, "readable") ? desc.readable : false;
 		if (StringTools.endsWith(desc.files[0], ".hdr")) {
 			loadBlobFromDescription(desc, function(blob) {
@@ -57,6 +87,7 @@ class LoaderImpl {
 	}
 
 	public static function loadSoundFromDescription(desc: Dynamic, done: kha.Sound->Void, failed: AssetError->Void) {
+		applyBaseUrl(desc);
 		if (SystemImpl._hasWebAudio) {
 			#if !kha_debug_html5
 			var element = Browser.document.createAudioElement();
@@ -155,6 +186,7 @@ class LoaderImpl {
 	}
 
 	public static function loadVideoFromDescription(desc: Dynamic, done: kha.Video->Void, failed: AssetError->Void): Void {
+		applyBaseUrl(desc);
 		kha.js.Video.fromFile(desc.files, done);
 	}
 
@@ -189,6 +221,7 @@ class LoaderImpl {
 	}
 
 	public static function loadBlobFromDescription(desc: Dynamic, done: Blob->Void, failed: AssetError->Void) {
+		applyBaseUrl(desc);
 		#if kha_debug_html5
 		var file: String = desc.files[0];
 
