@@ -14,6 +14,8 @@ extern class Window {
 	public var width(get, set): Int;
 	public var height(get, set): Int;
 	public var mode(get, set): WindowMode;
+	/** Maximize (true) or restore (false) the window; leaves fullscreen first when maximizing. No-op where the platform has no window manager. */
+	public function setMaximized(maximized: Bool): Void;
 	public var visible(get, set): Bool;
 	public var title(get, set): String;
 	public function notifyOnResize(callback: Int->Int->Void): Void;

@@ -190,6 +190,9 @@ class Window {
 		return mode;
 	}
 
+	@:functionCode("kinc_window_set_maximized(num, maximized);")
+	public function setMaximized(maximized: Bool): Void {}
+
 	public var visible(get, set): Bool;
 
 	function get_visible(): Bool {

@@ -87,6 +87,8 @@ class Window {
 		return Windowed;
 	}
 
+	public function setMaximized(maximized: Bool): Void {}
+
 	public var visible(get, set): Bool;
 
 	function get_visible(): Bool {
