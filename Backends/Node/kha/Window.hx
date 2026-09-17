@@ -37,4 +37,5 @@ class Window {
 	public function resize(width: Int, height: Int) {}
 
 	public function move(x: Int, y: Int) {}
+	public function setMaximized(maximized: Bool): Void {}
 }

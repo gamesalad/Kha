@@ -124,6 +124,8 @@ class Window {
 		return mode;
 	}
 
+	public function setMaximized(maximized: Bool): Void {}
+
 	function isFullscreen(): Bool {
 		return Syntax.code("document.fullscreenElement === this.canvas ||
 			document.mozFullScreenElement === this.canvas ||
