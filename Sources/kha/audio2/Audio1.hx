@@ -77,16 +77,19 @@ class Audio1 {
 		}
 
 		#if cpp
+		// An exception must not leave the mutex held: the native audio callback swallows it to keep the audio thread alive, and the next acquire on
+		// another thread would then wait forever.
 		mutex.acquire();
-		#end
-		for (i in 0...channelCount) {
-			internalSoundChannels[i] = soundChannels[i];
+		try {
+			copyChannels();
 		}
-		for (i in 0...channelCount) {
-			internalStreamChannels[i] = streamChannels[i];
+		catch (e: Dynamic) {
+			mutex.release();
+			throw e;
 		}
-		#if cpp
 		mutex.release();
+		#else
+		copyChannels();
 		#end
 
 		for (channel in internalSoundChannels) {
@@ -112,6 +115,15 @@ class Audio1 {
 			if (buffer.writeLocation >= buffer.size) {
 				buffer.writeLocation = 0;
 			}
+		}
+	}
+
+	static function copyChannels(): Void {
+		for (i in 0...channelCount) {
+			internalSoundChannels[i] = soundChannels[i];
+		}
+		for (i in 0...channelCount) {
+			internalStreamChannels[i] = streamChannels[i];
 		}
 	}
 
