@@ -17,10 +17,12 @@
 #if HXCPP_API_LEVEL >= 332
 #include <hxinc/kha/SystemImpl.h>
 #include <hxinc/kha/audio2/Audio.h>
+#include <hxinc/kha/audio2/Buffer.h>
 #include <hxinc/kha/input/Sensor.h>
 #else
 #include <kha/SystemImpl.h>
 #include <kha/audio2/Audio.h>
+#include <kha/audio2/Buffer.h>
 #include <kha/input/Sensor.h>
 #endif
 
@@ -195,46 +197,8 @@ namespace {
 		SystemImpl_obj::dropFiles(String(filePath));
 	}
 
-#if defined(HXCPP_TELEMETRY) || defined(HXCPP_PROFILER) || defined(HXCPP_DEBUG)
-	const static bool gcInteractionStrictlyRequired = true;
-#else
-	const static bool gcInteractionStrictlyRequired = false;
-#endif
-	bool mixThreadregistered = false;
-
-	void mix(kinc_a2_buffer_t *buffer, uint32_t samples, void *userdata) {
-		using namespace Kore;
-
-		int t0 = 99;
-#ifdef KINC_MULTITHREADED_AUDIO
-		if (!mixThreadregistered && !::kha::audio2::Audio_obj::disableGcInteractions) {
-			hx::SetTopOfStack(&t0, true);
-			mixThreadregistered = true;
-			hx::EnterGCFreeZone();
-		}
-
-		// int addr = 0;
-		// Kore::log(Info, "mix address is %x", &addr);
-
-		if (mixThreadregistered && ::kha::audio2::Audio_obj::disableGcInteractions && !gcInteractionStrictlyRequired) {
-			// hx::UnregisterCurrentThread();
-			// mixThreadregistered = false;
-		}
-
-		if (mixThreadregistered) {
-			hx::ExitGCFreeZone();
-		}
-#endif
-
-		::kha::audio2::Audio_obj::_callCallback(samples * 2, kinc_a2_samples_per_second());
-
-#ifdef KINC_MULTITHREADED_AUDIO
-		if (mixThreadregistered) {
-			hx::EnterGCFreeZone();
-		}
-#endif
-
-		for (int i = 0; i < samples; ++i) {
+	void copySamples(kinc_a2_buffer_t *buffer, uint32_t samples) {
+		for (uint32_t i = 0; i < samples; ++i) {
 			float value = ::kha::audio2::Audio_obj::_readSample();
 			buffer->channels[0][buffer->write_location] = value;
 			value = ::kha::audio2::Audio_obj::_readSample();
@@ -244,6 +208,74 @@ namespace {
 				buffer->write_location = 0;
 			}
 		}
+	}
+
+	void writeSilence(kinc_a2_buffer_t *buffer, uint32_t samples) {
+		for (uint32_t i = 0; i < samples; ++i) {
+			buffer->channels[0][buffer->write_location] = 0;
+			buffer->channels[1][buffer->write_location] = 0;
+			buffer->write_location += 1;
+			if (buffer->write_location >= buffer->data_size) {
+				buffer->write_location = 0;
+			}
+		}
+	}
+
+	// Called by Kinc for every block of samples. With KINC_MULTITHREADED_AUDIO
+	// that is the system's audio thread, and the system is free to change
+	// which thread that is (macOS moves IO to a new thread on a sample-rate,
+	// device or route change), so the thread is attached to the GC for the
+	// duration of each callback and released again before returning:
+	// SetTopOfStack(&top, true) attaches the thread if it has no allocator
+	// yet (pooled allocators are reused) and adds a stack lock;
+	// PopTopOfStack() drops it and releases the allocator once no lock is
+	// left. No state survives a callback, so a new thread is never mistaken
+	// for a registered one, and a thread that exits leaves no stack behind
+	// for the GC to scan.
+	//
+	// The _readSample copy runs while the thread is still attached, so the
+	// Haxe buffer can not move under it.
+	//
+	// Without KINC_MULTITHREADED_AUDIO (DirectSound) the callback runs from
+	// kinc_a2_update on the main thread, which is permanently registered and
+	// outside any GC-free zone; nothing to attach there.
+	//
+	// A Haxe exception must not unwind into the system's audio code: it is
+	// swallowed, the block is filled with silence and the Haxe ring buffer is
+	// resynchronized (its read position may lag a partially written block).
+	void mix(kinc_a2_buffer_t *buffer, uint32_t samples, void *userdata) {
+#ifdef KINC_MULTITHREADED_AUDIO
+		int top = 0;
+		hx::SetTopOfStack(&top, true);
+#endif
+
+		bool ok = true;
+		try {
+			::kha::audio2::Audio_obj::_callCallback(samples * 2, kinc_a2_samples_per_second());
+		}
+		catch (...) {
+			ok = false;
+		}
+
+		if (ok) {
+			copySamples(buffer, samples);
+		}
+		else {
+			static bool logged = false;
+			if (!logged) {
+				logged = true;
+				kinc_log(KINC_LOG_LEVEL_ERROR, "Exception in the audio callback, writing silence");
+			}
+			::kha::audio2::Buffer haxeBuffer = ::kha::audio2::Audio_obj::buffer;
+			if (hx::IsNotNull(haxeBuffer)) {
+				haxeBuffer->readLocation = haxeBuffer->writeLocation;
+			}
+			writeSilence(buffer, samples);
+		}
+
+#ifdef KINC_MULTITHREADED_AUDIO
+		hx::PopTopOfStack();
+#endif
 	}
 
 	char cutCopyString[4096];
