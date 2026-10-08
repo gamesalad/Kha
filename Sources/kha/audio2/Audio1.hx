@@ -143,26 +143,50 @@ class Audio1 {
 		var foundChannel = false;
 
 		#if cpp
+		// Same as in mix: an exception must not leave the mutex held, the audio thread would wait for it forever.
 		mutex.acquire();
-		#end
-		for (i in 0...channelCount) {
-			if (soundChannels[i] == null || soundChannels[i].finished) {
-				soundChannels[i] = channel;
-				foundChannel = true;
-				break;
-			}
+		try {
+			foundChannel = addSoundChannel(channel);
 		}
-		#if cpp
+		catch (e: Dynamic) {
+			mutex.release();
+			throw e;
+		}
 		mutex.release();
+		#else
+		foundChannel = addSoundChannel(channel);
 		#end
 
 		return foundChannel ? channel : null;
 	}
 
+	static function addSoundChannel(channel: kha.audio2.AudioChannel): Bool {
+		for (i in 0...channelCount) {
+			if (soundChannels[i] == null || soundChannels[i].finished) {
+				soundChannels[i] = channel;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function _playAgain(channel: kha.audio2.AudioChannel): Void {
 		#if cpp
 		mutex.acquire();
+		try {
+			readdSoundChannel(channel);
+		}
+		catch (e: Dynamic) {
+			mutex.release();
+			throw e;
+		}
+		mutex.release();
+		#else
+		readdSoundChannel(channel);
 		#end
+	}
+
+	static function readdSoundChannel(channel: kha.audio2.AudioChannel): Void {
 		for (i in 0...channelCount) {
 			if (soundChannels[i] == channel) {
 				soundChannels[i] = null;
@@ -174,9 +198,6 @@ class Audio1 {
 				break;
 			}
 		}
-		#if cpp
-		mutex.release();
-		#end
 	}
 
 	public static function stream(sound: Sound, loop: Bool = false): kha.audio1.AudioChannel {
@@ -192,18 +213,28 @@ class Audio1 {
 
 		#if cpp
 		mutex.acquire();
-		#end
-		for (i in 0...channelCount) {
-			if (streamChannels[i] == null || streamChannels[i].finished) {
-				streamChannels[i] = channel;
-				foundChannel = true;
-				break;
-			}
+		try {
+			foundChannel = addStreamChannel(channel);
 		}
-		#if cpp
+		catch (e: Dynamic) {
+			mutex.release();
+			throw e;
+		}
 		mutex.release();
+		#else
+		foundChannel = addStreamChannel(channel);
 		#end
 
 		return foundChannel ? channel : null;
+	}
+
+	static function addStreamChannel(channel: StreamChannel): Bool {
+		for (i in 0...channelCount) {
+			if (streamChannels[i] == null || streamChannels[i].finished) {
+				streamChannels[i] = channel;
+				return true;
+			}
+		}
+		return false;
 	}
 }
