@@ -65,6 +65,17 @@ class Gamepad {
 
 	public var id(get, null): String;
 	public var vendor(get, null): String;
+
+	/**
+		The USB/HID vendor id, or -1 when it is unknown (no gamepad at this index, or the platform does not report it).
+	**/
+	public var vendorId(get, null): Int;
+
+	/**
+		The USB/HID product id, or -1 when it is unknown (no gamepad at this index, or the platform does not report it).
+	**/
+	public var productId(get, null): Int;
+
 	public var connected(default, null): Bool;
 
 	public function rumble(leftAmount: Float, rightAmount: Float) {
@@ -77,6 +88,14 @@ class Gamepad {
 
 	function get_vendor(): String {
 		return SystemImpl.getGamepadVendor(index);
+	}
+
+	function get_vendorId(): Int {
+		return SystemImpl.getGamepadVendorId(index);
+	}
+
+	function get_productId(): Int {
+		return SystemImpl.getGamepadProductId(index);
 	}
 
 	@input

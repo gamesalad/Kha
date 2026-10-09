@@ -370,6 +370,14 @@ class SystemImpl {
 		return @:privateAccess String.fromUTF8(b);
 	}
 
+	public static function getGamepadVendorId(index: Int): Int {
+		return -1;
+	}
+
+	public static function getGamepadProductId(index: Int): Int {
+		return -1;
+	}
+
 	public static function setGamepadRumble(index: Int, leftAmount: Float, rightAmount: Float) {}
 
 	public static function safeZone(): Float {
