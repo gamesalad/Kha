@@ -188,6 +188,14 @@ class SystemImpl {
 		return "unknown";
 	}
 
+	public static function getGamepadVendorId(index: Int): Int {
+		return -1;
+	}
+
+	public static function getGamepadProductId(index: Int): Int {
+		return -1;
+	}
+
 	public static function setGamepadRumble(index: Int, leftAmount: Float, rightAmount: Float): Void {}
 
 	public static function getPen(num: Int): kha.input.Pen {

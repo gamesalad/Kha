@@ -293,7 +293,7 @@ class SystemImpl {
 		}
 		kha.kore.graphics4.Graphics.lastWindow = -1;
 
-		for (i in 0...4) {
+		for (i in 0...gamepads.length) {
 			if (gamepads[i].connected && !checkGamepadConnected(i)) {
 				Gamepad.sendDisconnectEvent(i);
 			}
@@ -379,11 +379,16 @@ class SystemImpl {
 		pen.sendEraserMoveEvent(windowId, x, y, pressure);
 	}
 
+	// Kinc can report more gamepads (KINC_GAMEPAD_MAX_COUNT) than Kha creates.
 	public static function gamepadAxis(gamepad: Int, axis: Int, value: Float): Void {
+		if (gamepad < 0 || gamepad >= gamepads.length)
+			return;
 		gamepads[gamepad].sendAxisEvent(axis, value);
 	}
 
 	public static function gamepadButton(gamepad: Int, button: Int, value: Float): Void {
+		if (gamepad < 0 || gamepad >= gamepads.length)
+			return;
 		gamepads[gamepad].sendButtonEvent(button, value);
 	}
 
@@ -515,6 +520,16 @@ class SystemImpl {
 	@:functionCode("return ::String(::getGamepadVendor(index));")
 	public static function getGamepadVendor(index: Int): String {
 		return "unknown";
+	}
+
+	@:functionCode("return kinc_gamepad_vendor_id(index);")
+	public static function getGamepadVendorId(index: Int): Int {
+		return -1;
+	}
+
+	@:functionCode("return kinc_gamepad_product_id(index);")
+	public static function getGamepadProductId(index: Int): Int {
+		return -1;
 	}
 
 	public static function setGamepadRumble(index: Int, leftAmount: Float, rightAmount: Float): Void {

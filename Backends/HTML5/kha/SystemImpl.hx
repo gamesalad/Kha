@@ -229,7 +229,7 @@ class SystemImpl {
 		return true;
 	}
 
-	static inline var maxGamepads: Int = 4;
+	static inline var maxGamepads: Int = 8;
 	static var frame: Framebuffer;
 	static var keyboard: Keyboard = null;
 	static var mouse: kha.input.Mouse;
@@ -259,19 +259,23 @@ class SystemImpl {
 		}
 		js.Browser.window.addEventListener("gamepadconnected", (e) -> {
 			var pad: js.html.Gamepad = e.gamepad;
+			if (pad.index >= maxGamepads)
+				return;
 			Gamepad.sendConnectEvent(pad.index);
 			for (i in 0...pad.buttons.length) {
 				gamepadStates[pad.index].buttons[i] = 0;
 			}
 		});
 		js.Browser.window.addEventListener("gamepaddisconnected", (e) -> {
+			if (e.gamepad.index >= maxGamepads)
+				return;
 			Gamepad.sendDisconnectEvent(e.gamepad.index);
 		});
 		var sysGamepads = getGamepads();
 		if (sysGamepads != null) {
 			for (i in 0...sysGamepads.length) {
 				var pad = sysGamepads[i];
-				if (pad != null) {
+				if (pad != null && pad.index < maxGamepads) {
 					gamepads[pad.index].connected = true;
 				}
 			}
@@ -342,6 +346,8 @@ class SystemImpl {
 	}
 
 	static function checkGamepad(pad: js.html.Gamepad) {
+		if (pad.index >= maxGamepads)
+			return;
 		for (i in 0...pad.axes.length) {
 			if (pad.axes[i] != null) {
 				var axis = pad.axes[i];
@@ -1269,6 +1275,14 @@ class SystemImpl {
 
 	public static function getGamepadVendor(index: Int): String {
 		return "unknown";
+	}
+
+	public static function getGamepadVendorId(index: Int): Int {
+		return -1;
+	}
+
+	public static function getGamepadProductId(index: Int): Int {
+		return -1;
 	}
 
 	public static function setGamepadRumble(index: Int, leftAmount: Float, rightAmount: Float): Void {
